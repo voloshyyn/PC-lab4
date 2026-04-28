@@ -64,7 +64,7 @@ private:
         }
         catch (...)
         {
-            calc_status = -1; // Позначаємо помилку
+            calc_status = -1;
         }
     }
 
@@ -192,3 +192,38 @@ public:
         }
     }
 };
+
+int main()
+{
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    SOCKET server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+
+    bind(server_socket, (sockaddr *)&server_addr, sizeof(server_addr));
+    listen(server_socket, SOMAXCONN);
+    cout << "Сервер запущено (Порт: 8080). Очікування підключень..." << endl;
+
+    while (true)
+    {
+        SOCKET client_socket = accept(server_socket, nullptr, nullptr);
+        if (client_socket != INVALID_SOCKET)
+        {
+            cout << "[Сервер] Новий клієнт підключився!" << endl;
+            auto session = make_shared<ClientSession>(client_socket);
+            thread([session]()
+                   { session->run(); })
+                .detach();
+        }
+    }
+
+    closesocket(server_socket);
+    WSACleanup();
+    return 0;
+}
